@@ -8,7 +8,7 @@ import os
 # ==========================================
 st.set_page_config(
     page_title="Industrial Construction Fraud & COSO Study",
-    page_icon="",
+    page_icon="🏗️",
     layout="centered",
     initial_sidebar_state="expanded"
 )
@@ -57,7 +57,7 @@ st.sidebar.info(
 )
 
 st.sidebar.markdown("---")
-st.sidebar.subheader(" Confidentiality Notice")
+st.sidebar.subheader("🔒 Confidentiality Notice")
 st.sidebar.write(
     "Participation is strictly voluntary. All responses are anonymized "
     "and used exclusively for academic research."
@@ -90,7 +90,16 @@ else:
         st.markdown('<p class="question-title">1. Functional Role *</p>', unsafe_allow_html=True)
         role = st.selectbox(
             "Functional Role selection",
-            ["Project Manager / Site Engineer", "Quantity Surveyor (QS)", "Finance Officer / Accountant", "Internal Auditor / Compliance Officer", "Other"],
+            [
+                "Select role...",
+                "President, Association of Contractors",
+                "Project Managers",
+                "Quantity Surveyors",
+                "Finance Officers",
+                "Procurement officers",
+                "Internal Auditors",
+                "Other"
+            ],
             label_visibility="collapsed"
         )
         other_role = st.text_input("If 'Other', please specify:", label_visibility="collapsed", placeholder="Specify role...") if role == "Other" else ""
@@ -210,10 +219,10 @@ else:
 
     st.markdown("---")
     
-    # Direct Form Submission Button (Outside `st.form` so persistent cards render cleanly)
+    # Submission Button with Validation Check
     if st.button("Submit Interview Response 🚀", type="primary"):
-        if not project_types or not q_schemes or not q_incident:
-            st.error("❌ Please complete all required core fields (Project Types, Schemes, and Incident) before submitting.")
+        if role == "Select role..." or not project_types or not q_schemes or not q_incident:
+            st.error("❌ Please select your Functional Role and complete all required core fields before submitting.")
         else:
             # Prepare data record
             response_data = {
@@ -249,7 +258,7 @@ else:
 # RESEARCHER ADMIN PORTAL
 # ==========================================
 st.markdown("---")
-with st.expander(" Researcher Admin Portal (Download Responses)"):
+with st.expander("🔐 Researcher Admin Portal (Download Responses)"):
     st.write("View and download collected field responses for NVivo analysis.")
     if os.path.exists(DATA_FILE):
         df_existing = pd.read_csv(DATA_FILE)
@@ -258,7 +267,7 @@ with st.expander(" Researcher Admin Portal (Download Responses)"):
         
         csv_data = df_existing.to_csv(index=False).encode('utf-8')
         st.download_button(
-            label=" Download Responses as CSV (for NVivo / Excel)",
+            label="📥 Download Responses as CSV (for NVivo / Excel)",
             data=csv_data,
             file_name=f"construction_fraud_responses_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
             mime="text/csv",
