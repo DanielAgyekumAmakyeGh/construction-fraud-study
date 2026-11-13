@@ -255,22 +255,28 @@ else:
             st.balloons()
 
 # ==========================================
-# RESEARCHER ADMIN PORTAL
+# SECURE RESEARCHER ADMIN PORTAL
 # ==========================================
 st.markdown("---")
-with st.expander("🔐 Researcher Admin Portal (Download Responses)"):
-    st.write("View and download collected field responses for NVivo analysis.")
-    if os.path.exists(DATA_FILE):
-        df_existing = pd.read_csv(DATA_FILE)
-        st.metric("Total Responses Collected", len(df_existing))
-        st.dataframe(df_existing, use_container_width=True)
-        
-        csv_data = df_existing.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="📥 Download Responses as CSV (for NVivo / Excel)",
-            data=csv_data,
-            file_name=f"construction_fraud_responses_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-            mime="text/csv",
-        )
-    else:
-        st.info("No responses recorded yet. Submit a test response above to initialize the dataset.")
+with st.expander("🔐 Researcher Admin Portal (Access Control Protected)"):
+    st.write("Enter the administrator passcode to view and download collected field responses.")
+    admin_password = st.text_input("Admin Passcode", type="password", placeholder="Enter passcode...")
+    
+    if admin_password == "coso2026":
+        st.success("Access Granted.")
+        if os.path.exists(DATA_FILE):
+            df_existing = pd.read_csv(DATA_FILE)
+            st.metric("Total Responses Collected", len(df_existing))
+            st.dataframe(df_existing, use_container_width=True)
+            
+            csv_data = df_existing.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="📥 Download Responses as CSV (for NVivo / Excel)",
+                data=csv_data,
+                file_name=f"construction_fraud_responses_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                mime="text/csv",
+            )
+        else:
+            st.info("No responses recorded yet. Submit a test response above to initialize the dataset.")
+    elif admin_password != "":
+        st.error("Incorrect passcode. Access denied.")
