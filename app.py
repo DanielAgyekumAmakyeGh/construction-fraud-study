@@ -578,7 +578,7 @@ else:
                     )
 
 # ============================================================
-# ADMIN DOWNLOAD — PASSWORD-PROTECTED
+# ADMIN DOWNLOAD — PASSWORD-PROTECTED WITH CLEAR BUTTON
 # ============================================================
 st.markdown("---")
 with st.expander("Admin Download — Restricted Access"):
@@ -614,6 +614,22 @@ with st.expander("Admin Download — Restricted Access"):
                     declined_count = int(df_existing["Q6_Declined"].sum())
                     provided_count = len(df_existing) - declined_count
                     st.write(f"{provided_count} provided, {declined_count} declined")
+
+                # ============================================================
+                # DANGER ZONE — CLEAR ALL RESPONSES
+                # ============================================================
+                st.markdown("---")
+                st.markdown("### Danger zone")
+                st.write("This deletes all collected responses permanently. This cannot be undone.")
+                confirm_clear = st.checkbox(
+                    "I understand this will delete all responses permanently",
+                    key="confirm_clear"
+                )
+                if st.button("Clear all responses", disabled=not confirm_clear, key="clear_button"):
+                    os.remove(DATA_FILE)
+                    st.success("All responses have been cleared. The dataset is now empty.")
+                    st.rerun()
+
             except pd.errors.EmptyDataError:
                 st.info("Response file is empty. Submit a test response to initialize the dataset.")
             except Exception as e:
