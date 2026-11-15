@@ -19,31 +19,7 @@ st.set_page_config(
 ADMIN_PASSWORD = "coso2026"
 
 # ============================================================
-# PASSWORD GATE — blocks the entire app until correct password
-# ============================================================
-if "authenticated" not in st.session_state:
-    st.session_state["authenticated"] = False
-
-if not st.session_state["authenticated"]:
-    st.markdown("## Restricted Access")
-    st.write("This application is for the principal researcher only. Enter the admin password to continue.")
-
-    with st.form("login_form"):
-        entered = st.text_input("Admin password", type="password", key="login_pw")
-        submitted = st.form_submit_button("Enter")
-
-    if submitted:
-        if entered == ADMIN_PASSWORD:
-            st.session_state["authenticated"] = True
-            st.rerun()
-        else:
-            st.error("Incorrect password.")
-
-    # Stop here — nothing else renders until authenticated
-    st.stop()
-
-# ============================================================
-# CUSTOM STYLING (only rendered after login)
+# CUSTOM STYLING
 # ============================================================
 st.markdown("""
     <style>
@@ -107,11 +83,6 @@ st.sidebar.write(
     "**Section D** — Challenges in prevention, detection and response (Q16–Q17)\n\n"
     "**Closing prompts** — Rationalisation and control effectiveness (P1–P2)"
 )
-
-st.sidebar.markdown("---")
-if st.sidebar.button("Log out"):
-    st.session_state["authenticated"] = False
-    st.rerun()
 
 # ============================================================
 # MAIN TITLE
@@ -607,41 +578,47 @@ else:
                     )
 
 # ============================================================
-# ADMIN DOWNLOAD PORTAL (only visible after login)
+# ADMIN DOWNLOAD — PASSWORD-PROTECTED
 # ============================================================
 st.markdown("---")
-st.markdown("## Admin Download")
-st.write("Download collected responses.")
+with st.expander("Admin Download — Restricted Access"):
+    st.write("Enter the admin password to view and download responses.")
+    entered = st.text_input("Admin password", type="password", key="admin_pw")
 
-if os.path.exists(DATA_FILE) and os.path.getsize(DATA_FILE) > 0:
-    try:
-        df_existing = pd.read_csv(DATA_FILE)
-        st.metric("Total Responses Collected", len(df_existing))
-        st.dataframe(df_existing)
+    if entered == ADMIN_PASSWORD:
+        st.success("Access granted.")
 
-        csv_data = df_existing.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="Download Responses as CSV (for NVivo / Excel)",
-            data=csv_data,
-            file_name=f"industrial_construction_fraud_responses_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-            mime="text/csv",
-        )
+        if os.path.exists(DATA_FILE) and os.path.getsize(DATA_FILE) > 0:
+            try:
+                df_existing = pd.read_csv(DATA_FILE)
+                st.metric("Total Responses Collected", len(df_existing))
+                st.dataframe(df_existing)
 
-        st.markdown("### Quick Summary of Key Fields")
-        if "Q1_Role" in df_existing.columns:
-            st.write("**Respondent roles:**")
-            st.write(df_existing["Q1_Role"].value_counts())
-        if "Q2_Size" in df_existing.columns:
-            st.write("**Firm sizes:**")
-            st.write(df_existing["Q2_Size"].value_counts())
-        if "Q6_Declined" in df_existing.columns:
-            st.write("**Q6 incidence cases provided:**")
-            declined_count = int(df_existing["Q6_Declined"].sum())
-            provided_count = len(df_existing) - declined_count
-            st.write(f"{provided_count} provided, {declined_count} declined")
-    except pd.errors.EmptyDataError:
-        st.info("Response file is empty. Submit a test response to initialize the dataset.")
-    except Exception as e:
-        st.warning(f"Could not read the response file: {type(e).__name__}")
-else:
-    st.info("No responses recorded yet. Submit a test response above to initialize the dataset.")
+                csv_data = df_existing.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="Download Responses as CSV (for NVivo / Excel)",
+                    data=csv_data,
+                    file_name=f"industrial_construction_fraud_responses_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv",
+                )
+
+                st.markdown("### Quick Summary of Key Fields")
+                if "Q1_Role" in df_existing.columns:
+                    st.write("**Respondent roles:**")
+                    st.write(df_existing["Q1_Role"].value_counts())
+                if "Q2_Size" in df_existing.columns:
+                    st.write("**Firm sizes:**")
+                    st.write(df_existing["Q2_Size"].value_counts())
+                if "Q6_Declined" in df_existing.columns:
+                    st.write("**Q6 incidence cases provided:**")
+                    declined_count = int(df_existing["Q6_Declined"].sum())
+                    provided_count = len(df_existing) - declined_count
+                    st.write(f"{provided_count} provided, {declined_count} declined")
+            except pd.errors.EmptyDataError:
+                st.info("Response file is empty. Submit a test response to initialize the dataset.")
+            except Exception as e:
+                st.warning(f"Could not read the response file: {type(e).__name__}")
+        else:
+            st.info("No responses recorded yet. Submit a test response above to initialize the dataset.")
+    elif entered:
+        st.error("Incorrect password.")
