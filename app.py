@@ -8,7 +8,7 @@ import os
 # ============================================================
 st.set_page_config(
     page_title="Occupational Fraud in Ghana's Industrial Construction Subsector",
-    page_icon="",
+    page_icon=None,
     layout="centered",
     initial_sidebar_state="expanded"
 )
@@ -59,7 +59,6 @@ st.markdown("""
 # ============================================================
 # SIDEBAR
 # ============================================================
-st.sidebar.image("https://img.icons8.com/color/96/constructor.png", width=80)
 st.sidebar.title("Study Overview")
 st.sidebar.info(
     "**Research Focus:** Understanding occupational fraud in Ghana's industrial "
@@ -70,14 +69,14 @@ st.sidebar.info(
 )
 
 st.sidebar.markdown("---")
-st.sidebar.subheader(" Confidentiality Notice")
+st.sidebar.subheader("Confidentiality Notice")
 st.sidebar.write(
     "Participation is strictly voluntary. All responses are anonymised "
     "and used exclusively for academic research. You may decline any question."
 )
 
 st.sidebar.markdown("---")
-st.sidebar.subheader(" Instrument Structure")
+st.sidebar.subheader("Instrument Structure")
 st.sidebar.write(
     "**Section A** — Participant background (Q1–Q2)\n\n"
     "**Section B** — Forms of occupational fraud (Q3–Q6)\n\n"
@@ -107,7 +106,7 @@ consent = st.checkbox(
 )
 
 if not consent:
-    st.warning("⚠️ Please check the consent box above to unlock and complete the interview questionnaire.")
+    st.warning("Please check the consent box above to unlock and complete the interview questionnaire.")
 else:
     with st.form("interview_form"):
 
@@ -126,18 +125,26 @@ else:
             role = st.selectbox(
                 "Functional role",
                 [
+                    "President, Contractors Association of Ghana",
                     "Project Manager",
-                    "Site Engineer",
+                    "Site Supervisor",
+                    "Civil/Structure Engineer",
                     "Quantity Surveyor (QS)",
                     "Finance Officer / Accountant",
-                    "Internal Auditor / Compliance Officer",
+                    "Internal Auditor",
+                    "External Auditor",
                     "Procurement Officer",
                     "Director / Senior Management",
+                    "Head of Security",
                     "Other"
                 ],
+                index=None,
+                placeholder="Select your role...",
                 key="q1_role"
             )
-            other_role = st.text_input("If 'Other', please specify:", key="q1_other_role") if role == "Other" else ""
+            other_role = ""
+            if role == "Other":
+                other_role = st.text_input("If 'Other', please specify:", key="q1_other_role")
         with col2:
             experience_total = st.number_input(
                 "Years of professional construction experience",
@@ -147,6 +154,8 @@ else:
                 "Years with current firm",
                 min_value=1, max_value=50, value=3, key="q1_exp_firm"
             )
+            if experience_firm > experience_total:
+                st.caption("Note: Years with current firm exceed total years in construction — please verify.")
 
         project_types = st.multiselect(
             "Types of industrial construction projects worked on in the last five years",
@@ -215,26 +224,23 @@ else:
         st.markdown("**Q4. Are these schemes more often committed by individuals acting alone or through collusion — with colleagues, subcontractors or clients — and how do such arrangements typically work?** <span class='rq-tag'>RQ1</span>", unsafe_allow_html=True)
         st.markdown("<p class='probe-text'>Probes: Can you describe how a collusive arrangement is set up? Who approaches whom?</p>", unsafe_allow_html=True)
 
-        col1, col2 = st.columns(2)
-        with col1:
-            perpetrator_pattern = st.selectbox(
-                "Predominant perpetrator pattern",
-                [
-                    "Mostly lone individuals",
-                    "Mostly collusion with colleagues",
-                    "Mostly collusion with subcontractors/suppliers",
-                    "Mostly collusion with clients",
-                    "Mixed — varies by scheme value"
-                ],
-                key="q4_pattern"
-            )
-        with col2:
-            q4_mechanism = st.text_area(
-                "How collusive arrangements are set up",
-                placeholder="Who approaches whom? How is the split arranged? What controls are defeated?",
-                key="q4_mechanism",
-                height=120
-            )
+        perpetrator_pattern = st.selectbox(
+            "Predominant perpetrator pattern",
+            [
+                "Mostly lone individuals",
+                "Mostly collusion with colleagues",
+                "Mostly collusion with subcontractors/suppliers",
+                "Mostly collusion with clients",
+                "Mixed — varies by scheme value"
+            ],
+            key="q4_pattern"
+        )
+        q4_mechanism = st.text_area(
+            "How collusive arrangements are set up",
+            placeholder="Who approaches whom? How is the split arranged? What controls are defeated?",
+            key="q4_mechanism",
+            height=120
+        )
 
         # Q5 — Vignette
         st.markdown("**Q5. Consider a scenario: a site engineer routinely certifies more aggregate than was delivered and splits the difference with the supplier's representative. How common is this in Ghanaian construction, and what makes it possible?** <span class='rq-tag'>RQ1</span>", unsafe_allow_html=True)
@@ -263,6 +269,9 @@ else:
             height=150
         )
         q6_declined = st.checkbox("I prefer not to answer Q6", key="q6_declined")
+
+        q6_detection = "Declined"
+        q6_outcome = "Declined"
 
         if not q6_declined:
             col1, col2 = st.columns(2)
@@ -499,15 +508,18 @@ else:
         # SUBMIT
         # ---------------------------------------------------------
         st.markdown("---")
-        submitted = st.form_submit_button("Submit Interview Response 🚀")
+        submitted = st.form_submit_button("Submit Interview Response")
 
         if submitted:
-            # Validation: Section A and B are mandatory; Section C and D are strongly encouraged
             missing = []
             if not role:
                 missing.append("Q1 Role")
+            if role == "Other" and not other_role.strip():
+                missing.append("Q1 Other role specification")
             if not project_types:
                 missing.append("Q1 Project types")
+            if experience_firm > experience_total:
+                missing.append("Q1 Years with firm cannot exceed total experience")
             if not q3_schemes.strip():
                 missing.append("Q3 Schemes")
             if not q7_tone.strip():
@@ -518,12 +530,12 @@ else:
                 missing.append("Q16 Challenges")
 
             if missing:
-                st.error(f"❌ Please complete the following required fields before submitting: {', '.join(missing)}")
+                st.error(f"Please correct the following before submitting: {', '.join(missing)}")
             else:
                 response_data = {
                     "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     # Section A
-                    "Q1_Role": role if role != "Other" else f"Other: {other_role}",
+                    "Q1_Role": role if role != "Other" else f"Other: {other_role.strip()}",
                     "Q1_Experience_Total": experience_total,
                     "Q1_Experience_Firm": experience_firm,
                     "Q1_Project_Types": "; ".join(project_types),
@@ -540,8 +552,8 @@ else:
                     "Q5_Enablers": q5_enablers,
                     "Q6_Declined": q6_declined,
                     "Q6_Case": q6_case,
-                    "Q6_Detection": q6_detection if not q6_declined else "Declined",
-                    "Q6_Outcome": q6_outcome if not q6_declined else "Declined",
+                    "Q6_Detection": q6_detection,
+                    "Q6_Outcome": q6_outcome,
                     # Section C
                     "Q7_Tone": q7_tone,
                     "Q8_Remuneration": q8_remuneration,
@@ -569,43 +581,69 @@ else:
 
                 df_new = pd.DataFrame([response_data])
 
-                if os.path.exists(DATA_FILE):
-                    df_new.to_csv(DATA_FILE, mode='a', header=False, index=False)
-                else:
-                    df_new.to_csv(DATA_FILE, mode='w', header=True, index=False)
-
-                st.success("✅ Thank you! Your interview response has been successfully recorded and securely saved.")
-                st.balloons()
+                try:
+                    if os.path.exists(DATA_FILE) and os.path.getsize(DATA_FILE) > 0:
+                        df_new.to_csv(DATA_FILE, mode='a', header=False, index=False)
+                    else:
+                        df_new.to_csv(DATA_FILE, mode='w', header=True, index=False)
+                    st.success("Thank you. Your interview response has been successfully recorded and securely saved.")
+                    st.balloons()
+                except Exception as e:
+                    st.error(
+                        "Your response could not be saved automatically. "
+                        "Please inform the researcher directly. "
+                        f"(Technical detail: {type(e).__name__})"
+                    )
 
 # ============================================================
 # RESEARCHER ADMIN PORTAL
 # ============================================================
-with st.expander("🔐 Researcher Admin Portal — Download Responses"):
+with st.expander("Researcher Admin Portal — Download Responses"):
     st.write("View and download collected field responses for framework analysis in NVivo or Excel.")
 
-    if os.path.exists(DATA_FILE):
-        df_existing = pd.read_csv(DATA_FILE)
-        st.metric("Total Responses Collected", len(df_existing))
+    if os.path.exists(DATA_FILE) and os.path.getsize(DATA_FILE) > 0:
+        try:
+            df_existing = pd.read_csv(DATA_FILE)
+            st.metric("Total Responses Collected", len(df_existing))
+            st.dataframe(df_existing)
 
-        # Display the dataframe
-        st.dataframe(df_existing)
+            csv_data = df_existing.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="Download Responses as CSV (for NVivo / Excel)",
+                data=csv_data,
+                file_name=f"industrial_construction_fraud_responses_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                mime="text/csv",
+            )
 
-        # Download button
-        csv_data = df_existing.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="⬇️ Download Responses as CSV (for NVivo / Excel)",
-            data=csv_data,
-            file_name=f"industrial_construction_fraud_responses_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-            mime="text/csv",
-        )
-
-        # A compact view of key fields
-        st.markdown("### Quick Summary of Key Fields")
-        if "Q1_Role" in df_existing.columns:
-            st.write("**Respondent roles:**")
-            st.write(df_existing["Q1_Role"].value_counts())
-        if "Q2_Size" in df_existing.columns:
-            st.write("**Firm sizes:**")
-            st.write(df_existing["Q2_Size"].value_counts())
+            st.markdown("### Quick Summary of Key Fields")
+            if "Q1_Role" in df_existing.columns:
+                st.write("**Respondent roles:**")
+                st.write(df_existing["Q1_Role"].value_counts())
+            if "Q2_Size" in df_existing.columns:
+                st.write("**Firm sizes:**")
+                st.write(df_existing["Q2_Size"].value_counts())
+            if "Q6_Declined" in df_existing.columns:
+                st.write("**Q6 incidence cases provided:**")
+                declined_count = int(df_existing["Q6_Declined"].sum())
+                provided_count = len(df_existing) - declined_count
+                st.write(f"{provided_count} provided, {declined_count} declined")
+        except pd.errors.EmptyDataError:
+            st.info("Response file is empty. Submit a test response to initialize the dataset.")
+        except pd.errors.ParserError:
+            st.warning("Response file could not be parsed. It may be corrupted. Check the file on the server.")
+        except Exception as e:
+            st.warning(f"Could not read the response file: {type(e).__name__}")
     else:
         st.info("No responses recorded yet. Submit a test response above to initialize the dataset.")
+
+# ============================================================
+# PERSISTENCE WARNING
+# ============================================================
+with st.expander("Important Notice for the Researcher"):
+    st.warning(
+        "**Data persistence:** Responses are stored in a CSV on the app's local filesystem. "
+        "On Streamlit Community Cloud, this filesystem is ephemeral — it resets on every "
+        "redeploy and after 7 days of inactivity.\n\n"
+        "**Before every push, download the responses** via the admin portal above. "
+        "For fieldwork, switch to Google Sheets or a database backend to ensure persistence."
+    )
