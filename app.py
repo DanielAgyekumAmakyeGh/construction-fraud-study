@@ -2,12 +2,13 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import os
+import hmac
 
 # ============================================================
 # PAGE CONFIGURATION
 # ============================================================
 st.set_page_config(
-    page_title="Occupational Fraud in Ghana's Industrial Construction Subsector",
+    page_title="Understanding Occupational Fraud in the Industrial Construction Subsector of Ghana",
     page_icon=None,
     layout="centered",
     initial_sidebar_state="expanded"
@@ -57,15 +58,54 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ============================================================
+# AUTHENTICATION HELPER
+# ============================================================
+def check_password():
+    """Return True if the user has entered the correct admin password."""
+    correct_password = None
+    try:
+        correct_password = st.secrets["admin_password"]
+    except (KeyError, FileNotFoundError):
+        correct_password = os.environ.get("ADMIN_PASSWORD")
+
+    if not correct_password:
+        st.error(
+            "Admin password is not configured on the server. "
+            "Set `admin_password` in Streamlit Secrets or the ADMIN_PASSWORD "
+            "environment variable before using the admin portal."
+        )
+        return False
+
+    if st.session_state.get("admin_authenticated", False):
+        return True
+
+    with st.form("admin_login", clear_on_submit=True):
+        st.markdown("**Admin login required**")
+        entered = st.text_input("Admin password", type="password", key="admin_pw_input")
+        submitted = st.form_submit_button("Log in")
+
+    if submitted:
+        if hmac.compare_digest(entered, correct_password):
+            st.session_state["admin_authenticated"] = True
+            st.success("Authenticated. Reloading admin portal...")
+            st.rerun()
+        else:
+            st.error("Incorrect password.")
+
+    return False
+
+
+# ============================================================
 # SIDEBAR
 # ============================================================
 st.sidebar.title("Study Overview")
 st.sidebar.info(
-    "**Research Focus:** Understanding occupational fraud in Ghana's industrial "
-    "construction subsector and the operational effectiveness of internal controls "
-    "under the COSO Internal Control–Integrated Framework (2013).\n\n"
-    "**Institution:** University of Ghana\n"
-    "**Principal Researcher:** Daniel Agyekum Amakye (ID: 1048136)"
+    "**Research Topic:** Understanding Occupational Fraud in the Industrial "
+    "Construction Subsector of Ghana.\n\n"
+    "**Researcher:** Simon Kwame Buaba (Master's Student)\n"
+    "**Index Number:** 22428938\n"
+    "**Institution:** University of Ghana Business School\n"
+    "**Analytical Framework:** COSO Internal Control–Integrated Framework (2013)"
 )
 
 st.sidebar.markdown("---")
@@ -85,10 +125,17 @@ st.sidebar.write(
     "**Closing prompts** — Rationalisation and control effectiveness (P1–P2)"
 )
 
+if st.session_state.get("admin_authenticated", False):
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("Admin Session")
+    if st.sidebar.button("Log out of admin"):
+        st.session_state["admin_authenticated"] = False
+        st.rerun()
+
 # ============================================================
 # MAIN TITLE
 # ============================================================
-st.markdown('<p class="main-header">Occupational Fraud in Ghana\'s Industrial Construction Subsector</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-header">Understanding Occupational Fraud in the Industrial Construction Subsector of Ghana</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-header">Semi-Structured Expert Interview — COSO Internal Control–Integrated Framework (2013) | 17 Core Questions + 2 Optional Prompts</p>', unsafe_allow_html=True)
 
 # ============================================================
@@ -116,7 +163,6 @@ else:
         st.markdown("---")
         st.markdown("## Section A: Background of the Participant")
 
-        # Q1 — Role, tenure, project types, capacity
         st.markdown("**Q1. Please describe your current role and responsibilities, how long you have worked in construction and with your current firm, and what types of industrial construction projects you have worked on in the last five years, and in what capacity.** <span class='rq-tag'>Background</span>", unsafe_allow_html=True)
         st.markdown("<p class='probe-text'>Probes: Which of these projects was the most recent? What was your specific role on it?</p>", unsafe_allow_html=True)
 
@@ -169,7 +215,6 @@ else:
             key="q1_project_types"
         )
 
-        # Q2 — Firm size and ownership
         st.markdown("**Q2. How would you describe your firm's size and ownership — indigenous or foreign-owned, single-director or corporate, and approximate staff strength?** <span class='rq-tag'>Background</span>", unsafe_allow_html=True)
         st.markdown("<p class='probe-text'>Probes: How many staff are site-based versus office-based? Who owns the firm?</p>", unsafe_allow_html=True)
 
@@ -203,7 +248,6 @@ else:
         st.markdown("---")
         st.markdown("## Section B: Forms of Occupational Fraud")
 
-        # Q3 — Scheme types, stages, costly vs common
         st.markdown("**Q3. What forms of occupational fraud are most common in your experience, at what stage of a project do they typically arise, and which do you consider the most costly versus the most common?** <span class='rq-tag'>RQ1</span>", unsafe_allow_html=True)
         st.markdown("<p class='probe-text'>Probes: Can you rank them by cost? By frequency? Are the most costly the same as the most common?</p>", unsafe_allow_html=True)
 
@@ -220,7 +264,6 @@ else:
             height=100
         )
 
-        # Q4 — Lone vs collusion
         st.markdown("**Q4. Are these schemes more often committed by individuals acting alone or through collusion — with colleagues, subcontractors or clients — and how do such arrangements typically work?** <span class='rq-tag'>RQ1</span>", unsafe_allow_html=True)
         st.markdown("<p class='probe-text'>Probes: Can you describe how a collusive arrangement is set up? Who approaches whom?</p>", unsafe_allow_html=True)
 
@@ -242,7 +285,6 @@ else:
             height=120
         )
 
-        # Q5 — Vignette
         st.markdown("**Q5. Consider a scenario: a site engineer routinely certifies more aggregate than was delivered and splits the difference with the supplier's representative. How common is this in Ghanaian construction, and what makes it possible?** <span class='rq-tag'>RQ1</span>", unsafe_allow_html=True)
         st.markdown("<p class='probe-text'>Probes: Have you seen something like this? What controls would normally catch it — and why don't they?</p>", unsafe_allow_html=True)
 
@@ -258,7 +300,6 @@ else:
             height=100
         )
 
-        # Q6 — Incidence probe
         st.markdown("**Q6. Can you describe a specific recent case of occupational fraud you personally observed or became aware of — what happened, who was involved, and how was it handled?** <span class='rq-tag'>RQ1 — Critical Incident</span>", unsafe_allow_html=True)
         st.markdown("<p class='probe-text'>Probes: How was it discovered? What was the outcome? (If you decline, simply leave blank and move on.)</p>", unsafe_allow_html=True)
 
@@ -294,7 +335,6 @@ else:
         st.markdown("---")
         st.markdown("## Section C: Operation of the COSO Internal Control Components")
 
-        # --- Control Environment ---
         st.markdown("### 3.1 Control Environment")
 
         st.markdown("**Q7. How would you describe the tone set by senior management on integrity and ethical conduct, and how are staff screened before recruitment, especially for roles handling cash, procurement or site materials?** <span class='rq-tag'>RQ2 — Control Environment</span>", unsafe_allow_html=True)
@@ -317,7 +357,6 @@ else:
             height=120
         )
 
-        # --- Risk Assessment ---
         st.markdown("### 3.2 Risk Assessment")
 
         st.markdown("**Q9. Does your firm formally identify and manage fraud as a risk? If so, how and how often — and are fraud risks identified in advance or only recognised after schemes come to light?** <span class='rq-tag'>RQ2 — Risk Assessment</span>", unsafe_allow_html=True)
@@ -368,7 +407,6 @@ else:
             height=100
         )
 
-        # --- Control Activities ---
         st.markdown("### 3.3 Control Activities")
 
         st.markdown("**Q11. How are authorisation limits set and enforced across expenditure types — petty cash, site imprests, materials requisitions, variation orders, subcontractor payments, payroll — and how is segregation of duties maintained between initiating, authorising and recording transactions? Where does it break down?** <span class='rq-tag'>RQ2 — Control Activities</span>", unsafe_allow_html=True)
@@ -391,7 +429,6 @@ else:
             height=150
         )
 
-        # --- Information and Communication ---
         st.markdown("### 3.4 Information and Communication")
 
         st.markdown("**Q13. How does information about possible fraud reach those able to act on it — including whether your firm has a whistleblowing channel, how it is structured, whether staff trust and use it, and whether fraud in construction is more often uncovered through a tip, internal audit, external audit, or another route?** <span class='rq-tag'>RQ2 — Information &amp; Communication</span>", unsafe_allow_html=True)
@@ -418,7 +455,6 @@ else:
             height=100
         )
 
-        # --- Monitoring Activities ---
         st.markdown("### 3.5 Monitoring Activities")
 
         st.markdown("**Q14. Does your firm have an internal audit function? If so, how is it resourced and what does it focus on, and how often are internal controls formally evaluated?** <span class='rq-tag'>RQ2 — Monitoring Activities</span>", unsafe_allow_html=True)
@@ -534,7 +570,6 @@ else:
             else:
                 response_data = {
                     "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    # Section A
                     "Q1_Role": role if role != "Other" else f"Other: {other_role.strip()}",
                     "Q1_Experience_Total": experience_total,
                     "Q1_Experience_Firm": experience_firm,
@@ -543,7 +578,6 @@ else:
                     "Q2_Size": firm_size,
                     "Q2_Structure": firm_structure,
                     "Q2_Site_Office_Split": site_office_split,
-                    # Section B
                     "Q3_Schemes": q3_schemes,
                     "Q3_Rankings": q3_rankings,
                     "Q4_Pattern": perpetrator_pattern,
@@ -554,7 +588,6 @@ else:
                     "Q6_Case": q6_case,
                     "Q6_Detection": q6_detection,
                     "Q6_Outcome": q6_outcome,
-                    # Section C
                     "Q7_Tone": q7_tone,
                     "Q8_Remuneration": q8_remuneration,
                     "Q9_Formal": q9_formal,
@@ -571,10 +604,8 @@ else:
                     "Q14_Frequency": q14_frequency,
                     "Q14_Detail": q14_detail,
                     "Q15_Analytics": q15_analytics,
-                    # Section D
                     "Q16_Challenges": q16_challenges,
                     "Q17_Response": q17_response,
-                    # Closing prompts
                     "P1_Rationalisation": p1_rationalisation,
                     "P2_Effectiveness": p2_effectiveness,
                 }
@@ -596,54 +627,46 @@ else:
                     )
 
 # ============================================================
-# RESEARCHER ADMIN PORTAL
+# RESEARCHER ADMIN PORTAL (PASSWORD-PROTECTED)
 # ============================================================
-with st.expander("Researcher Admin Portal — Download Responses"):
-    st.write("View and download collected field responses for framework analysis in NVivo or Excel.")
+with st.expander("Researcher Admin Portal — Restricted Access"):
+    if check_password():
+        st.success("Authenticated as administrator.")
+        st.write("View and download collected field responses for framework analysis in NVivo or Excel.")
 
-    if os.path.exists(DATA_FILE) and os.path.getsize(DATA_FILE) > 0:
-        try:
-            df_existing = pd.read_csv(DATA_FILE)
-            st.metric("Total Responses Collected", len(df_existing))
-            st.dataframe(df_existing)
+        if os.path.exists(DATA_FILE) and os.path.getsize(DATA_FILE) > 0:
+            try:
+                df_existing = pd.read_csv(DATA_FILE)
+                st.metric("Total Responses Collected", len(df_existing))
+                st.dataframe(df_existing)
 
-            csv_data = df_existing.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="Download Responses as CSV (for NVivo / Excel)",
-                data=csv_data,
-                file_name=f"industrial_construction_fraud_responses_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv",
-            )
+                csv_data = df_existing.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="Download Responses as CSV (for NVivo / Excel)",
+                    data=csv_data,
+                    file_name=f"industrial_construction_fraud_responses_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv",
+                )
 
-            st.markdown("### Quick Summary of Key Fields")
-            if "Q1_Role" in df_existing.columns:
-                st.write("**Respondent roles:**")
-                st.write(df_existing["Q1_Role"].value_counts())
-            if "Q2_Size" in df_existing.columns:
-                st.write("**Firm sizes:**")
-                st.write(df_existing["Q2_Size"].value_counts())
-            if "Q6_Declined" in df_existing.columns:
-                st.write("**Q6 incidence cases provided:**")
-                declined_count = int(df_existing["Q6_Declined"].sum())
-                provided_count = len(df_existing) - declined_count
-                st.write(f"{provided_count} provided, {declined_count} declined")
-        except pd.errors.EmptyDataError:
-            st.info("Response file is empty. Submit a test response to initialize the dataset.")
-        except pd.errors.ParserError:
-            st.warning("Response file could not be parsed. It may be corrupted. Check the file on the server.")
-        except Exception as e:
-            st.warning(f"Could not read the response file: {type(e).__name__}")
+                st.markdown("### Quick Summary of Key Fields")
+                if "Q1_Role" in df_existing.columns:
+                    st.write("**Respondent roles:**")
+                    st.write(df_existing["Q1_Role"].value_counts())
+                if "Q2_Size" in df_existing.columns:
+                    st.write("**Firm sizes:**")
+                    st.write(df_existing["Q2_Size"].value_counts())
+                if "Q6_Declined" in df_existing.columns:
+                    st.write("**Q6 incidence cases provided:**")
+                    declined_count = int(df_existing["Q6_Declined"].sum())
+                    provided_count = len(df_existing) - declined_count
+                    st.write(f"{provided_count} provided, {declined_count} declined")
+            except pd.errors.EmptyDataError:
+                st.info("Response file is empty. Submit a test response to initialize the dataset.")
+            except pd.errors.ParserError:
+                st.warning("Response file could not be parsed. It may be corrupted. Check the file on the server.")
+            except Exception as e:
+                st.warning(f"Could not read the response file: {type(e).__name__}")
+        else:
+            st.info("No responses recorded yet. Submit a test response above to initialize the dataset.")
     else:
-        st.info("No responses recorded yet. Submit a test response above to initialize the dataset.")
-
-# ============================================================
-# PERSISTENCE WARNING
-# ============================================================
-with st.expander("Important Notice for the Researcher"):
-    st.warning(
-        "**Data persistence:** Responses are stored in a CSV on the app's local filesystem. "
-        "On Streamlit Community Cloud, this filesystem is ephemeral — it resets on every "
-        "redeploy and after 7 days of inactivity.\n\n"
-        "**Before every push, download the responses** via the admin portal above. "
-        "For fieldwork, switch to Google Sheets or a database backend to ensure persistence."
-    )
+        st.caption("This section is restricted to the principal researcher. Enter the admin password to view responses.")
