@@ -3,17 +3,19 @@ import pandas as pd
 from datetime import datetime
 import os
 
-# ==========================================
-# PAGE CONFIGURATION & ACADEMIC BRANDING
-# ==========================================
+# ============================================================
+# PAGE CONFIGURATION
+# ============================================================
 st.set_page_config(
-    page_title="Industrial Construction Fraud & COSO Study",
-    page_icon="🏗️",
+    page_title="Occupational Fraud in Ghana's Industrial Construction Subsector",
+    page_icon="",
     layout="centered",
     initial_sidebar_state="expanded"
 )
 
-# Custom Styling for Persistent Question Layout
+# ============================================================
+# CUSTOM STYLING
+# ============================================================
 st.markdown("""
     <style>
     .main-header {
@@ -27,256 +29,583 @@ st.markdown("""
         color: #4A6B82;
         margin-bottom: 20px;
     }
-    .question-card {
-        background-color: #F8FAFC;
-        padding: 18px;
+    .section-card {
+        background-color: #F4F7FA;
+        padding: 20px;
         border-radius: 8px;
         border-left: 5px solid #1B365D;
-        margin-bottom: 15px;
-        margin-top: 10px;
+        margin-bottom: 20px;
     }
-    .question-title {
-        font-weight: 600;
+    .rq-tag {
+        display: inline-block;
+        background-color: #E8EEF4;
         color: #1B365D;
-        margin-bottom: 8px;
-        font-size: 15px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 10px;
+        margin-left: 8px;
+    }
+    .probe-text {
+        font-size: 12px;
+        color: #6B7C8E;
+        font-style: italic;
+        margin-top: -8px;
+        margin-bottom: 12px;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# ==========================================
-# SIDEBAR - STUDY OVERVIEW & NOTICE
-# ==========================================
+# ============================================================
+# SIDEBAR
+# ============================================================
 st.sidebar.image("https://img.icons8.com/color/96/constructor.png", width=80)
 st.sidebar.title("Study Overview")
 st.sidebar.info(
-    "**Research Focus:** Investigating occupational fraud and the operational effectiveness of internal controls (COSO 2013) "
-    "within Ghana’s industrial construction subsector.\n\n"
-    "**Institution:** WorldQuant University\n"
+    "**Research Focus:** Understanding occupational fraud in Ghana's industrial "
+    "construction subsector and the operational effectiveness of internal controls "
+    "under the COSO Internal Control–Integrated Framework (2013).\n\n"
+    "**Institution:** University of Ghana\n"
     "**Principal Researcher:** Daniel Agyekum Amakye (ID: 1048136)"
 )
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("🔒 Confidentiality Notice")
+st.sidebar.subheader(" Confidentiality Notice")
 st.sidebar.write(
-    "Participation is strictly voluntary. All responses are anonymized "
-    "and used exclusively for academic research."
+    "Participation is strictly voluntary. All responses are anonymised "
+    "and used exclusively for academic research. You may decline any question."
 )
 
-# ==========================================
-# MAIN HEADER
-# ==========================================
-st.markdown('<p class="main-header">Industrial Construction Fraud & COSO Internal Control Study</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-header">Semi-Structured Expert Interview Questionnaire (Streamlined 10-Question Instrument)</p>', unsafe_allow_html=True)
+st.sidebar.markdown("---")
+st.sidebar.subheader(" Instrument Structure")
+st.sidebar.write(
+    "**Section A** — Participant background (Q1–Q2)\n\n"
+    "**Section B** — Forms of occupational fraud (Q3–Q6)\n\n"
+    "**Section C** — Operation of the five COSO components (Q7–Q15)\n\n"
+    "**Section D** — Challenges in prevention, detection and response (Q16–Q17)\n\n"
+    "**Closing prompts** — Rationalisation and control effectiveness (P1–P2)"
+)
 
-# Data storage CSV path
-DATA_FILE = "survey_responses.csv"
+# ============================================================
+# MAIN TITLE
+# ============================================================
+st.markdown('<p class="main-header">Occupational Fraud in Ghana\'s Industrial Construction Subsector</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-header">Semi-Structured Expert Interview — COSO Internal Control–Integrated Framework (2013) | 17 Core Questions + 2 Optional Prompts</p>', unsafe_allow_html=True)
 
-# Informed Consent Check
-consent = st.checkbox("I confirm that I am a construction professional with at least 3 years of experience, and I voluntarily consent to participate in this academic study under strict confidentiality.")
+# ============================================================
+# DATA STORAGE
+# ============================================================
+DATA_FILE = "interview_responses.csv"
+
+# ============================================================
+# INFORMED CONSENT
+# ============================================================
+consent = st.checkbox(
+    "I confirm that I am a construction professional with at least 3 years of experience, "
+    "and I voluntarily consent to participate in this academic study under strict confidentiality. "
+    "I understand that I may decline any question, especially Q6 (incidence probe) and Q17 (non-sanctioning)."
+)
 
 if not consent:
     st.warning("⚠️ Please check the consent box above to unlock and complete the interview questionnaire.")
 else:
-    st.markdown("---")
-    
-    # ---------------------------------------------------------
-    # SECTION A: CONTEXT & BACKGROUND
-    # ---------------------------------------------------------
-    st.markdown("### Part A: Participant & Firm Background")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown('<p class="question-title">1. Functional Role *</p>', unsafe_allow_html=True)
-        role = st.selectbox(
-            "Functional Role selection",
-            [
-                "Select role...",
-                "President, Association of Contractors",
-                "Project Managers",
-                "Quantity Surveyors",
-                "Finance Officers",
-                "Procurement officers",
-                "Internal Auditors",
-                "Other"
-            ],
-            label_visibility="collapsed"
-        )
-        other_role = st.text_input("If 'Other', please specify:", label_visibility="collapsed", placeholder="Specify role...") if role == "Other" else ""
-        
-    with col2:
-        st.markdown('<p class="question-title">2. Years of Professional Experience *</p>', unsafe_allow_html=True)
-        experience = st.number_input("Years of Professional Construction Experience", min_value=1, max_value=40, value=8, label_visibility="collapsed")
+    with st.form("interview_form"):
 
-    st.markdown('<p class="question-title">3. Firm Ownership & Operational Scale *</p>', unsafe_allow_html=True)
-    firm_profile = st.selectbox(
-        "Firm Ownership selection",
-        [
-            "Indigenous Industrial Contractor (Ghanaian-owned)",
-            "Joint-Venture (JV) / International Contractor",
-            "Large Corporate Industrial / Energy Contractor",
-            "Medium-to-Small Indigenous Contractor"
-        ],
-        label_visibility="collapsed"
-    )
-    
-    st.markdown('<p class="question-title">4. Primary Industrial Construction Projects Handled *</p>', unsafe_allow_html=True)
-    project_types = st.text_input("Project Types input", placeholder="e.g., mining facilities, oil & gas tanks, power substations", label_visibility="collapsed")
+        # ---------------------------------------------------------
+        # SECTION A: BACKGROUND OF THE PARTICIPANT
+        # ---------------------------------------------------------
+        st.markdown("---")
+        st.markdown("## Section A: Background of the Participant")
 
-    st.markdown("---")
-    
-    # ---------------------------------------------------------
-    # SECTION B: FRAUD REALITIES & COSO OPERATION
-    # ---------------------------------------------------------
-    st.markdown("### Part B: Fraud Realities & Internal Controls (COSO)")
-    
-    st.markdown("""
-    <div class="question-card">
-        <div class="question-title">5. Common Fraud Schemes & Project Lifecycle (RQ1) *</div>
-        <p style="color: #4A6B82; font-size: 13px; margin-bottom: 8px;">What forms of occupational fraud (material substitution/short-delivery, inflated variations, ghost workers, kickbacks) are most common, and at which project stages do they occur?</p>
-    </div>
-    """, unsafe_allow_html=True)
-    q_schemes = st.text_area("Q5 input", placeholder="Enter your detailed observations here...", height=100, label_visibility="collapsed", key="q5")
-    
-    st.markdown("""
-    <div class="question-card">
-        <div class="question-title">6. Real-World Incident / Control Breakdown (RQ1 / Critical Incident) *</div>
-        <p style="color: #4A6B82; font-size: 13px; margin-bottom: 8px;">Can you walk through a specific situation you witnessed where an occupational fraud scheme or control breakdown occurred and bypassed existing checks?</p>
-    </div>
-    """, unsafe_allow_html=True)
-    q_incident = st.text_area("Q6 input", placeholder="Describe the incident or control failure...", height=100, label_visibility="collapsed", key="q6")
-    
-    st.markdown("""
-    <div class="question-card">
-        <div class="question-title">7. Tone & Culture - Control Environment (RQ2) *</div>
-        <p style="color: #4A6B82; font-size: 13px; margin-bottom: 8px;">How would you describe senior management's commitment to ethics? Are screening, remuneration, and disciplinary actions fair and consistent?</p>
-    </div>
-    """, unsafe_allow_html=True)
-    q_tone = st.text_area("Q7 input", placeholder="Share your perspective on leadership tone and culture...", height=100, label_visibility="collapsed", key="q7")
-    
-    st.markdown("""
-    <div class="question-card">
-        <div class="question-title">8. Risk Hotspots - Risk Assessment (RQ2) *</div>
-        <p style="color: #4A6B82; font-size: 13px; margin-bottom: 8px;">Does your firm proactively identify fraud risks, or are controls tightened reactively? Which processes (procurement, site materials, subcontractor payments) are most exposed?</p>
-    </div>
-    """, unsafe_allow_html=True)
-    q_risk = st.text_area("Q8 input", placeholder="Detail risk identification and vulnerable operational areas...", height=100, label_visibility="collapsed", key="q8")
-    
-    st.markdown("""
-    <div class="question-card">
-        <div class="question-title">9. Approvals & Safeguards - Control Activities (RQ2) *</div>
-        <p style="color: #4A6B82; font-size: 13px; margin-bottom: 8px;">How effectively are approval limits, segregation of duties, and physical site controls enforced? How are variation orders verified before interim payments?</p>
-    </div>
-    """, unsafe_allow_html=True)
-    q_activities = st.text_area("Q9 input", placeholder="Discuss control enforcement and approval safeguards...", height=100, label_visibility="collapsed", key="q9")
-    
-    st.markdown("""
-    <div class="question-card">
-        <div class="question-title">10. Reporting Channels - Information & Communication (RQ2) *</div>
-        <p style="color: #4A6B82; font-size: 13px; margin-bottom: 8px;">If someone suspects fraud, how does information flow? Do staff trust and use reporting channels, or do issues surface via informal tips/audits?</p>
-    </div>
-    """, unsafe_allow_html=True)
-    q_info = st.text_area("Q10 input", placeholder="Describe whistleblowing and reporting channels...", height=100, label_visibility="collapsed", key="q10")
-    
-    st.markdown("""
-    <div class="question-card">
-        <div class="question-title">11. Audits & Checks - Monitoring Activities (RQ2) *</div>
-        <p style="color: #4A6B82; font-size: 13px; margin-bottom: 8px;">How active is internal audit in regularly testing controls? Are proactive data-checks (duplicate invoices, anomalies) ever used?</p>
-    </div>
-    """, unsafe_allow_html=True)
-    q_monitoring = st.text_area("Q11 input", placeholder="Describe internal audit effectiveness and data checks...", height=100, label_visibility="collapsed", key="q11")
+        # Q1 — Role, tenure, project types, capacity
+        st.markdown("**Q1. Please describe your current role and responsibilities, how long you have worked in construction and with your current firm, and what types of industrial construction projects you have worked on in the last five years, and in what capacity.** <span class='rq-tag'>Background</span>", unsafe_allow_html=True)
+        st.markdown("<p class='probe-text'>Probes: Which of these projects was the most recent? What was your specific role on it?</p>", unsafe_allow_html=True)
 
-    st.markdown("---")
-    
-    # ---------------------------------------------------------
-    # SECTION C: CHALLENGES & HUMAN BEHAVIOR
-    # ---------------------------------------------------------
-    st.markdown("### Part C: Challenges, Rationalization & Culture (RQ3)")
-    
-    st.markdown("""
-    <div class="question-card">
-        <div class="question-title">12. Obstacles to Prevention & Detection (RQ3) *</div>
-        <p style="color: #4A6B82; font-size: 13px; margin-bottom: 8px;">What are the biggest operational or organizational challenges in stopping fraud while a project is active rather than long after closeout?</p>
-    </div>
-    """, unsafe_allow_html=True)
-    q_challenges = st.text_area("Q12 input", placeholder="Identify primary operational obstacles...", height=100, label_visibility="collapsed", key="q12")
-    
-    st.markdown("""
-    <div class="question-card">
-        <div class="question-title">13. Rationalization & Cultural Norms (RQ3) *</div>
-        <p style="color: #4A6B82; font-size: 13px; margin-bottom: 8px;">How do professionals on site justify smaller infractions (minor material theft, fuel inflation)? What actually stops people or discourages reporting?</p>
-    </div>
-    """, unsafe_allow_html=True)
-    q_rationalization = st.text_area("Q13 input", placeholder="Explain behavioral justifications and cultural norms...", height=100, label_visibility="collapsed", key="q13")
-    
-    st.markdown("""
-    <div class="question-card">
-        <div class="question-title">14. Additional Comments or Recommendations (Optional)</div>
-        <p style="color: #4A6B82; font-size: 13px; margin-bottom: 8px;">Any final recommendations for strengthening internal controls in Ghana's industrial construction sector?</p>
-    </div>
-    """, unsafe_allow_html=True)
-    additional_comments = st.text_area("Q14 input", placeholder="Optional final remarks...", height=100, label_visibility="collapsed", key="q14")
-
-    st.markdown("---")
-    
-    # Submission Button with Validation Check
-    if st.button("Submit Interview Response 🚀", type="primary"):
-        if role == "Select role..." or not project_types or not q_schemes or not q_incident:
-            st.error("❌ Please select your Functional Role and complete all required core fields before submitting.")
-        else:
-            # Prepare data record
-            response_data = {
-                "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "Role": role if role != "Other" else f"Other: {other_role}",
-                "Experience_Years": experience,
-                "Firm_Profile": firm_profile,
-                "Project_Types": project_types,
-                "Q_Schemes": q_schemes,
-                "Q_Incident": q_incident,
-                "Q_Tone": q_tone,
-                "Q_Risk": q_risk,
-                "Q_Activities": q_activities,
-                "Q_Info": q_info,
-                "Q_Monitoring": q_monitoring,
-                "Q_Challenges": q_challenges,
-                "Q_Rationalization": q_rationalization,
-                "Additional_Comments": additional_comments
-            }
-            
-            df_new = pd.DataFrame([response_data])
-            
-            # Append to CSV
-            if os.path.exists(DATA_FILE):
-                df_new.to_csv(DATA_FILE, mode='a', header=False, index=False)
-            else:
-                df_new.to_csv(DATA_FILE, mode='w', header=True, index=False)
-                
-            st.success("✅ Thank you! Your interview response has been successfully recorded and securely saved.")
-            st.balloons()
-
-# ==========================================
-# SECURE RESEARCHER ADMIN PORTAL
-# ==========================================
-st.markdown("---")
-with st.expander("🔐 Researcher Admin Portal (Access Control Protected)"):
-    st.write("Enter the administrator passcode to view and download collected field responses.")
-    admin_password = st.text_input("Admin Passcode", type="password", placeholder="Enter passcode...")
-    
-    if admin_password == "coso2026":
-        st.success("Access Granted.")
-        if os.path.exists(DATA_FILE):
-            df_existing = pd.read_csv(DATA_FILE)
-            st.metric("Total Responses Collected", len(df_existing))
-            st.dataframe(df_existing, use_container_width=True)
-            
-            csv_data = df_existing.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="📥 Download Responses as CSV (for NVivo / Excel)",
-                data=csv_data,
-                file_name=f"construction_fraud_responses_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv",
+        col1, col2 = st.columns(2)
+        with col1:
+            role = st.selectbox(
+                "Functional role",
+                [
+                    "Project Manager",
+                    "Site Engineer",
+                    "Quantity Surveyor (QS)",
+                    "Finance Officer / Accountant",
+                    "Internal Auditor / Compliance Officer",
+                    "Procurement Officer",
+                    "Director / Senior Management",
+                    "Other"
+                ],
+                key="q1_role"
             )
-        else:
-            st.info("No responses recorded yet. Submit a test response above to initialize the dataset.")
-    elif admin_password != "":
-        st.error("Incorrect passcode. Access denied.")
+            other_role = st.text_input("If 'Other', please specify:", key="q1_other_role") if role == "Other" else ""
+        with col2:
+            experience_total = st.number_input(
+                "Years of professional construction experience",
+                min_value=1, max_value=50, value=8, key="q1_exp_total"
+            )
+            experience_firm = st.number_input(
+                "Years with current firm",
+                min_value=1, max_value=50, value=3, key="q1_exp_firm"
+            )
+
+        project_types = st.multiselect(
+            "Types of industrial construction projects worked on in the last five years",
+            [
+                "Mining facilities",
+                "Oil and gas installations",
+                "Power-generation plants",
+                "Manufacturing / process plants",
+                "Other industrial infrastructure"
+            ],
+            key="q1_project_types"
+        )
+
+        # Q2 — Firm size and ownership
+        st.markdown("**Q2. How would you describe your firm's size and ownership — indigenous or foreign-owned, single-director or corporate, and approximate staff strength?** <span class='rq-tag'>Background</span>", unsafe_allow_html=True)
+        st.markdown("<p class='probe-text'>Probes: How many staff are site-based versus office-based? Who owns the firm?</p>", unsafe_allow_html=True)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            ownership = st.selectbox(
+                "Ownership structure",
+                ["Indigenous (Ghanaian-owned)", "Foreign-owned", "Joint venture (JV)", "Other"],
+                key="q2_ownership"
+            )
+        with col2:
+            firm_size = st.selectbox(
+                "Approximate staff strength",
+                ["Small (<30 staff)", "Medium (30–100 staff)", "Large (100–300 staff)", "Very large (>300 staff)"],
+                key="q2_size"
+            )
+
+        firm_structure = st.selectbox(
+            "Corporate structure",
+            ["Single-director", "Corporate (multiple directors)", "Subsidiary of a larger group"],
+            key="q2_structure"
+        )
+        site_office_split = st.text_input(
+            "Approximate site-based vs office-based staff split (e.g., 80% site, 20% office)",
+            key="q2_split"
+        )
+
+        # ---------------------------------------------------------
+        # SECTION B: FORMS OF OCCUPATIONAL FRAUD
+        # ---------------------------------------------------------
+        st.markdown("---")
+        st.markdown("## Section B: Forms of Occupational Fraud")
+
+        # Q3 — Scheme types, stages, costly vs common
+        st.markdown("**Q3. What forms of occupational fraud are most common in your experience, at what stage of a project do they typically arise, and which do you consider the most costly versus the most common?** <span class='rq-tag'>RQ1</span>", unsafe_allow_html=True)
+        st.markdown("<p class='probe-text'>Probes: Can you rank them by cost? By frequency? Are the most costly the same as the most common?</p>", unsafe_allow_html=True)
+
+        q3_schemes = st.text_area(
+            "Common fraud schemes and project lifecycle stages",
+            placeholder="Example: material substitution on site during construction; inflated variation orders at the variation stage; ghost workers on subcontractor payroll; kickbacks at procurement...",
+            key="q3_schemes",
+            height=150
+        )
+        q3_rankings = st.text_area(
+            "Cost vs frequency rankings (optional but valuable)",
+            placeholder="Example: Most costly — variation order inflation, client collusion, bribery. Most frequent — materials theft, fuel diversion, petty cash.",
+            key="q3_rankings",
+            height=100
+        )
+
+        # Q4 — Lone vs collusion
+        st.markdown("**Q4. Are these schemes more often committed by individuals acting alone or through collusion — with colleagues, subcontractors or clients — and how do such arrangements typically work?** <span class='rq-tag'>RQ1</span>", unsafe_allow_html=True)
+        st.markdown("<p class='probe-text'>Probes: Can you describe how a collusive arrangement is set up? Who approaches whom?</p>", unsafe_allow_html=True)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            perpetrator_pattern = st.selectbox(
+                "Predominant perpetrator pattern",
+                [
+                    "Mostly lone individuals",
+                    "Mostly collusion with colleagues",
+                    "Mostly collusion with subcontractors/suppliers",
+                    "Mostly collusion with clients",
+                    "Mixed — varies by scheme value"
+                ],
+                key="q4_pattern"
+            )
+        with col2:
+            q4_mechanism = st.text_area(
+                "How collusive arrangements are set up",
+                placeholder="Who approaches whom? How is the split arranged? What controls are defeated?",
+                key="q4_mechanism",
+                height=120
+            )
+
+        # Q5 — Vignette
+        st.markdown("**Q5. Consider a scenario: a site engineer routinely certifies more aggregate than was delivered and splits the difference with the supplier's representative. How common is this in Ghanaian construction, and what makes it possible?** <span class='rq-tag'>RQ1</span>", unsafe_allow_html=True)
+        st.markdown("<p class='probe-text'>Probes: Have you seen something like this? What controls would normally catch it — and why don't they?</p>", unsafe_allow_html=True)
+
+        q5_frequency = st.selectbox(
+            "How common is this scenario?",
+            ["Very common", "Common", "Occasional", "Rare", "Never seen", "Decline to answer"],
+            key="q5_frequency"
+        )
+        q5_enablers = st.text_area(
+            "What makes it possible?",
+            placeholder="Absence of independent quantity verification; collusion between certifying officer and supplier; difficulty of re-measuring after delivery...",
+            key="q5_enablers",
+            height=100
+        )
+
+        # Q6 — Incidence probe
+        st.markdown("**Q6. Can you describe a specific recent case of occupational fraud you personally observed or became aware of — what happened, who was involved, and how was it handled?** <span class='rq-tag'>RQ1 — Critical Incident</span>", unsafe_allow_html=True)
+        st.markdown("<p class='probe-text'>Probes: How was it discovered? What was the outcome? (If you decline, simply leave blank and move on.)</p>", unsafe_allow_html=True)
+
+        q6_case = st.text_area(
+            "Specific incident description (anonymised — do not name any individual)",
+            placeholder="What happened, who was involved (by role, not name), and how was it handled?",
+            key="q6_case",
+            height=150
+        )
+        q6_declined = st.checkbox("I prefer not to answer Q6", key="q6_declined")
+
+        if not q6_declined:
+            col1, col2 = st.columns(2)
+            with col1:
+                q6_detection = st.selectbox(
+                    "How was it discovered?",
+                    ["Tip / informal report", "Internal audit", "External audit", "Management observation", "Not detected", "Other", "N/A"],
+                    key="q6_detection"
+                )
+            with col2:
+                q6_outcome = st.selectbox(
+                    "What was the outcome?",
+                    ["Dismissed", "Repayment without sanction", "Warning", "Recovery without sanction", "Not investigated", "Prosecuted", "Ongoing", "Other", "N/A"],
+                    key="q6_outcome"
+                )
+
+        # ---------------------------------------------------------
+        # SECTION C: OPERATION OF THE COSO COMPONENTS
+        # ---------------------------------------------------------
+        st.markdown("---")
+        st.markdown("## Section C: Operation of the COSO Internal Control Components")
+
+        # --- Control Environment ---
+        st.markdown("### 3.1 Control Environment")
+
+        st.markdown("**Q7. How would you describe the tone set by senior management on integrity and ethical conduct, and how are staff screened before recruitment, especially for roles handling cash, procurement or site materials?** <span class='rq-tag'>RQ2 — Control Environment</span>", unsafe_allow_html=True)
+        st.markdown("<p class='probe-text'>Probes: What happens when a senior manager breaches policy? Are background checks done for site storekeepers?</p>", unsafe_allow_html=True)
+
+        q7_tone = st.text_area(
+            "Tone at the top and recruitment screening",
+            placeholder="Describe senior management's commitment to ethics; what happens when a senior manager breaches policy; how staff are screened...",
+            key="q7_tone",
+            height=120
+        )
+
+        st.markdown("**Q8. How fair is your firm's remuneration structure — does it relieve or create pressure to defraud — and when staff are caught committing fraud, what typically happens? Are consequences applied consistently across levels of seniority?** <span class='rq-tag'>RQ2 — Control Environment</span>", unsafe_allow_html=True)
+        st.markdown("<p class='probe-text'>Probes: Can you give an example of how a case was handled? Would a director be treated the same as a site clerk?</p>", unsafe_allow_html=True)
+
+        q8_remuneration = st.text_area(
+            "Remuneration fairness and sanction consistency",
+            placeholder="How fair is remuneration? What happens when staff are caught? Are sanctions consistent across seniority?",
+            key="q8_remuneration",
+            height=120
+        )
+
+        # --- Risk Assessment ---
+        st.markdown("### 3.2 Risk Assessment")
+
+        st.markdown("**Q9. Does your firm formally identify and manage fraud as a risk? If so, how and how often — and are fraud risks identified in advance or only recognised after schemes come to light?** <span class='rq-tag'>RQ2 — Risk Assessment</span>", unsafe_allow_html=True)
+        st.markdown("<p class='probe-text'>Probes: Is fraud on any risk register? Who reviews it, and when?</p>", unsafe_allow_html=True)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            q9_formal = st.selectbox(
+                "Is fraud formally assessed as a risk?",
+                ["Yes — on a formal risk register", "Informally, but not documented", "No", "Don't know"],
+                key="q9_formal"
+            )
+        with col2:
+            q9_timing = st.selectbox(
+                "When are fraud risks identified?",
+                ["Proactively, in advance", "Reactively, after schemes come to light", "Both", "Neither", "Don't know"],
+                key="q9_timing"
+            )
+
+        q9_detail = st.text_area(
+            "Further detail on formal risk assessment",
+            placeholder="How is the risk assessment conducted? Who is involved? How often is it reviewed?",
+            key="q9_detail",
+            height=100
+        )
+
+        st.markdown("**Q10. Which processes — for example procurement, materials management, site administration, expenditure claims, payroll — do you consider most exposed to fraud, and why?** <span class='rq-tag'>RQ2 — Risk Assessment</span>", unsafe_allow_html=True)
+        st.markdown("<p class='probe-text'>Probes: Which single process would you fix first if you could?</p>", unsafe_allow_html=True)
+
+        q10_exposed = st.multiselect(
+            "Processes most exposed to fraud (select all that apply)",
+            [
+                "Procurement / tendering",
+                "Materials management / site stores",
+                "Site administration (imprests, petty cash)",
+                "Expenditure claims",
+                "Payroll / subcontractor labour",
+                "Variation orders",
+                "Measured-work certification",
+                "Equipment and fuel management"
+            ],
+            key="q10_exposed"
+        )
+        q10_why = st.text_area(
+            "Why are these processes most exposed?",
+            placeholder="Structural reasons; control weaknesses; visibility of transactions; collusion opportunities...",
+            key="q10_why",
+            height=100
+        )
+
+        # --- Control Activities ---
+        st.markdown("### 3.3 Control Activities")
+
+        st.markdown("**Q11. How are authorisation limits set and enforced across expenditure types — petty cash, site imprests, materials requisitions, variation orders, subcontractor payments, payroll — and how is segregation of duties maintained between initiating, authorising and recording transactions? Where does it break down?** <span class='rq-tag'>RQ2 — Control Activities</span>", unsafe_allow_html=True)
+        st.markdown("<p class='probe-text'>Probes: In a small firm, who actually approves payments? Can one person order, receive and pay for materials?</p>", unsafe_allow_html=True)
+
+        q11_authorisation = st.text_area(
+            "Authorisation limits and segregation of duties",
+            placeholder="How are limits set and enforced across expenditure types? Where does segregation of duties break down?",
+            key="q11_authorisation",
+            height=150
+        )
+
+        st.markdown("**Q12. How are physical assets on site — fuel, cement, aggregates, steel, equipment — safeguarded and reconciled, and how are variation orders and measured-work certificates verified before payment?** <span class='rq-tag'>RQ2 — Control Activities</span>", unsafe_allow_html=True)
+        st.markdown("<p class='probe-text'>Probes: Who counts deliveries? Are stock records reconciled to certificates? Who checks a variation order before it is paid?</p>", unsafe_allow_html=True)
+
+        q12_safeguards = st.text_area(
+            "Physical safeguarding and variation/certificate verification",
+            placeholder="How are physical assets safeguarded and reconciled? How are variation orders and measured-work certificates verified before payment?",
+            key="q12_safeguards",
+            height=150
+        )
+
+        # --- Information and Communication ---
+        st.markdown("### 3.4 Information and Communication")
+
+        st.markdown("**Q13. How does information about possible fraud reach those able to act on it — including whether your firm has a whistleblowing channel, how it is structured, whether staff trust and use it, and whether fraud in construction is more often uncovered through a tip, internal audit, external audit, or another route?** <span class='rq-tag'>RQ2 — Information &amp; Communication</span>", unsafe_allow_html=True)
+        st.markdown("<p class='probe-text'>Probes: Has a whistleblowing channel ever been used? Would a site worker trust it?</p>", unsafe_allow_html=True)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            q13_channel = st.selectbox(
+                "Does a whistleblowing channel exist?",
+                ["Yes — formal and used", "Yes — formal but not trusted", "No", "Informal only", "Don't know"],
+                key="q13_channel"
+            )
+        with col2:
+            q13_detection_route = st.selectbox(
+                "Most common detection route",
+                ["Tips / informal reports", "Internal audit", "External audit", "Management observation", "Other", "Don't know"],
+                key="q13_detection_route"
+            )
+
+        q13_detail = st.text_area(
+            "Further detail on information flow and whistleblowing",
+            placeholder="How does information reach decision-makers? Has a channel been used? Would a site worker trust it?",
+            key="q13_detail",
+            height=100
+        )
+
+        # --- Monitoring Activities ---
+        st.markdown("### 3.5 Monitoring Activities")
+
+        st.markdown("**Q14. Does your firm have an internal audit function? If so, how is it resourced and what does it focus on, and how often are internal controls formally evaluated?** <span class='rq-tag'>RQ2 — Monitoring Activities</span>", unsafe_allow_html=True)
+        st.markdown("<p class='probe-text'>Probes: Is internal audit in-house or outsourced? Does it visit sites, and how often?</p>", unsafe_allow_html=True)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            q14_audit = st.selectbox(
+                "Internal audit function",
+                ["In-house", "Outsourced", "Both", "None", "Don't know"],
+                key="q14_audit"
+            )
+        with col2:
+            q14_frequency = st.selectbox(
+                "How often are controls formally evaluated?",
+                ["Quarterly", "Semi-annually", "Annually", "Less than annually", "Never", "Don't know"],
+                key="q14_frequency"
+            )
+
+        q14_detail = st.text_area(
+            "Further detail on internal audit",
+            placeholder="What does internal audit focus on? Does it visit sites? How is it resourced?",
+            key="q14_detail",
+            height=100
+        )
+
+        st.markdown("**Q15. Are proactive data-analytics techniques used to test transactions for fraud — for example round, duplicated, threshold or outlier amounts? If not, what would be needed to make them feasible?** <span class='rq-tag'>RQ2 — Monitoring Activities</span>", unsafe_allow_html=True)
+        st.markdown("<p class='probe-text'>Probes: Does anyone review payment data for patterns? What would it take to start?</p>", unsafe_allow_html=True)
+
+        q15_analytics = st.text_area(
+            "Use of data analytics",
+            placeholder="Are round/duplicate/threshold/outlier tests used? If not, what would be needed (cost, skills, data quality)?",
+            key="q15_analytics",
+            height=120
+        )
+
+        # ---------------------------------------------------------
+        # SECTION D: CHALLENGES IN PREVENTION, DETECTION AND RESPONSE
+        # ---------------------------------------------------------
+        st.markdown("---")
+        st.markdown("## Section D: Challenges in Prevention, Detection and Response")
+
+        st.markdown("**Q16. What are the main challenges you face in preventing occupational fraud in construction projects, and what are the main challenges in detecting it when it occurs?** <span class='rq-tag'>RQ3</span>", unsafe_allow_html=True)
+        st.markdown("<p class='probe-text'>Probes: Which challenge is the most serious? Is prevention or detection harder, and why?</p>", unsafe_allow_html=True)
+
+        q16_challenges = st.text_area(
+            "Challenges in prevention and detection",
+            placeholder="Structural, resource, organisational or cultural barriers. Which is the most serious?",
+            key="q16_challenges",
+            height=150
+        )
+
+        st.markdown("**Q17. When suspected fraud is reported, how does your firm typically respond — and are there reasons it might choose not to investigate or sanction?** <span class='rq-tag'>RQ3</span>", unsafe_allow_html=True)
+        st.markdown("<p class='probe-text'>Probes: What would make a firm decide not to act? Does the client's or subcontractor's relationship matter?</p>", unsafe_allow_html=True)
+
+        q17_response = st.text_area(
+            "Response to suspected fraud",
+            placeholder="How does the firm respond? Are there reasons it might choose not to investigate or sanction?",
+            key="q17_response",
+            height=150
+        )
+
+        # ---------------------------------------------------------
+        # OPTIONAL CLOSING PROMPTS
+        # ---------------------------------------------------------
+        st.markdown("---")
+        st.markdown("## Optional Closing Prompts")
+        st.write("These are optional and may be answered if time permits.")
+
+        st.markdown("**P1. How do practitioners justify or explain to themselves the small-scale fraud common on site — for example mileage inflation, timesheet manipulation, minor materials theft?** <span class='rq-tag'>RQ3 — Rationalisation</span>", unsafe_allow_html=True)
+        p1_rationalisation = st.text_area(
+            "Rationalisation of small-scale fraud",
+            placeholder="Relative deprivation, normalisation, comparative minimisation...",
+            key="p1_rationalisation",
+            height=100
+        )
+
+        st.markdown("**P2. Is the formal presence of a control — a policy, an authorisation limit, a hotline — enough to prevent fraud, or does its effectiveness depend on other factors? What perceived costs or risks of reporting or acting on fraud discourage professionals from doing so?** <span class='rq-tag'>RQ3 — Control effectiveness</span>", unsafe_allow_html=True)
+        p2_effectiveness = st.text_area(
+            "Formal control vs operational effectiveness",
+            placeholder="Is formal presence enough? What costs or risks discourage reporting or acting on fraud?",
+            key="p2_effectiveness",
+            height=100
+        )
+
+        # ---------------------------------------------------------
+        # SUBMIT
+        # ---------------------------------------------------------
+        st.markdown("---")
+        submitted = st.form_submit_button("Submit Interview Response 🚀")
+
+        if submitted:
+            # Validation: Section A and B are mandatory; Section C and D are strongly encouraged
+            missing = []
+            if not role:
+                missing.append("Q1 Role")
+            if not project_types:
+                missing.append("Q1 Project types")
+            if not q3_schemes.strip():
+                missing.append("Q3 Schemes")
+            if not q7_tone.strip():
+                missing.append("Q7 Tone")
+            if not q11_authorisation.strip():
+                missing.append("Q11 Authorisation")
+            if not q16_challenges.strip():
+                missing.append("Q16 Challenges")
+
+            if missing:
+                st.error(f"❌ Please complete the following required fields before submitting: {', '.join(missing)}")
+            else:
+                response_data = {
+                    "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    # Section A
+                    "Q1_Role": role if role != "Other" else f"Other: {other_role}",
+                    "Q1_Experience_Total": experience_total,
+                    "Q1_Experience_Firm": experience_firm,
+                    "Q1_Project_Types": "; ".join(project_types),
+                    "Q2_Ownership": ownership,
+                    "Q2_Size": firm_size,
+                    "Q2_Structure": firm_structure,
+                    "Q2_Site_Office_Split": site_office_split,
+                    # Section B
+                    "Q3_Schemes": q3_schemes,
+                    "Q3_Rankings": q3_rankings,
+                    "Q4_Pattern": perpetrator_pattern,
+                    "Q4_Mechanism": q4_mechanism,
+                    "Q5_Frequency": q5_frequency,
+                    "Q5_Enablers": q5_enablers,
+                    "Q6_Declined": q6_declined,
+                    "Q6_Case": q6_case,
+                    "Q6_Detection": q6_detection if not q6_declined else "Declined",
+                    "Q6_Outcome": q6_outcome if not q6_declined else "Declined",
+                    # Section C
+                    "Q7_Tone": q7_tone,
+                    "Q8_Remuneration": q8_remuneration,
+                    "Q9_Formal": q9_formal,
+                    "Q9_Timing": q9_timing,
+                    "Q9_Detail": q9_detail,
+                    "Q10_Exposed": "; ".join(q10_exposed),
+                    "Q10_Why": q10_why,
+                    "Q11_Authorisation": q11_authorisation,
+                    "Q12_Safeguards": q12_safeguards,
+                    "Q13_Channel": q13_channel,
+                    "Q13_Detection_Route": q13_detection_route,
+                    "Q13_Detail": q13_detail,
+                    "Q14_Audit": q14_audit,
+                    "Q14_Frequency": q14_frequency,
+                    "Q14_Detail": q14_detail,
+                    "Q15_Analytics": q15_analytics,
+                    # Section D
+                    "Q16_Challenges": q16_challenges,
+                    "Q17_Response": q17_response,
+                    # Closing prompts
+                    "P1_Rationalisation": p1_rationalisation,
+                    "P2_Effectiveness": p2_effectiveness,
+                }
+
+                df_new = pd.DataFrame([response_data])
+
+                if os.path.exists(DATA_FILE):
+                    df_new.to_csv(DATA_FILE, mode='a', header=False, index=False)
+                else:
+                    df_new.to_csv(DATA_FILE, mode='w', header=True, index=False)
+
+                st.success("✅ Thank you! Your interview response has been successfully recorded and securely saved.")
+                st.balloons()
+
+# ============================================================
+# RESEARCHER ADMIN PORTAL
+# ============================================================
+with st.expander("🔐 Researcher Admin Portal — Download Responses"):
+    st.write("View and download collected field responses for framework analysis in NVivo or Excel.")
+
+    if os.path.exists(DATA_FILE):
+        df_existing = pd.read_csv(DATA_FILE)
+        st.metric("Total Responses Collected", len(df_existing))
+
+        # Display the dataframe
+        st.dataframe(df_existing)
+
+        # Download button
+        csv_data = df_existing.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="⬇️ Download Responses as CSV (for NVivo / Excel)",
+            data=csv_data,
+            file_name=f"industrial_construction_fraud_responses_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+            mime="text/csv",
+        )
+
+        # A compact view of key fields
+        st.markdown("### Quick Summary of Key Fields")
+        if "Q1_Role" in df_existing.columns:
+            st.write("**Respondent roles:**")
+            st.write(df_existing["Q1_Role"].value_counts())
+        if "Q2_Size" in df_existing.columns:
+            st.write("**Firm sizes:**")
+            st.write(df_existing["Q2_Size"].value_counts())
+    else:
+        st.info("No responses recorded yet. Submit a test response above to initialize the dataset.")
