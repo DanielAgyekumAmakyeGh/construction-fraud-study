@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import os
-import hmac
 
 # ============================================================
 # PAGE CONFIGURATION
@@ -15,7 +14,36 @@ st.set_page_config(
 )
 
 # ============================================================
-# CUSTOM STYLING
+# ADMIN PASSWORD
+# ============================================================
+ADMIN_PASSWORD = "coso2026"
+
+# ============================================================
+# PASSWORD GATE — blocks the entire app until correct password
+# ============================================================
+if "authenticated" not in st.session_state:
+    st.session_state["authenticated"] = False
+
+if not st.session_state["authenticated"]:
+    st.markdown("## Restricted Access")
+    st.write("This application is for the principal researcher only. Enter the admin password to continue.")
+
+    with st.form("login_form"):
+        entered = st.text_input("Admin password", type="password", key="login_pw")
+        submitted = st.form_submit_button("Enter")
+
+    if submitted:
+        if entered == ADMIN_PASSWORD:
+            st.session_state["authenticated"] = True
+            st.rerun()
+        else:
+            st.error("Incorrect password.")
+
+    # Stop here — nothing else renders until authenticated
+    st.stop()
+
+# ============================================================
+# CUSTOM STYLING (only rendered after login)
 # ============================================================
 st.markdown("""
     <style>
@@ -28,13 +56,6 @@ st.markdown("""
     .sub-header {
         font-size: 14px;
         color: #4A6B82;
-        margin-bottom: 20px;
-    }
-    .section-card {
-        background-color: #F4F7FA;
-        padding: 20px;
-        border-radius: 8px;
-        border-left: 5px solid #1B365D;
         margin-bottom: 20px;
     }
     .rq-tag {
@@ -56,44 +77,6 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-
-# ============================================================
-# AUTHENTICATION HELPER
-# ============================================================
-def check_password():
-    """Return True if the user has entered the correct admin password."""
-    correct_password = None
-    try:
-        correct_password = st.secrets["admin_password"]
-    except (KeyError, FileNotFoundError):
-        correct_password = os.environ.get("ADMIN_PASSWORD")
-
-    if not correct_password:
-        st.error(
-            "Admin password is not configured on the server. "
-            "Set `admin_password` in Streamlit Secrets or the ADMIN_PASSWORD "
-            "environment variable before using the admin portal."
-        )
-        return False
-
-    if st.session_state.get("admin_authenticated", False):
-        return True
-
-    with st.form("admin_login", clear_on_submit=True):
-        st.markdown("**Admin login required**")
-        entered = st.text_input("Admin password", type="password", key="admin_pw_input")
-        submitted = st.form_submit_button("Log in")
-
-    if submitted:
-        if hmac.compare_digest(entered, correct_password):
-            st.session_state["admin_authenticated"] = True
-            st.success("Authenticated. Reloading admin portal...")
-            st.rerun()
-        else:
-            st.error("Incorrect password.")
-
-    return False
-
 
 # ============================================================
 # SIDEBAR
@@ -125,12 +108,10 @@ st.sidebar.write(
     "**Closing prompts** — Rationalisation and control effectiveness (P1–P2)"
 )
 
-if st.session_state.get("admin_authenticated", False):
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("Admin Session")
-    if st.sidebar.button("Log out of admin"):
-        st.session_state["admin_authenticated"] = False
-        st.rerun()
+st.sidebar.markdown("---")
+if st.sidebar.button("Log out"):
+    st.session_state["authenticated"] = False
+    st.rerun()
 
 # ============================================================
 # MAIN TITLE
@@ -158,7 +139,7 @@ else:
     with st.form("interview_form"):
 
         # ---------------------------------------------------------
-        # SECTION A: BACKGROUND OF THE PARTICIPANT
+        # SECTION A
         # ---------------------------------------------------------
         st.markdown("---")
         st.markdown("## Section A: Background of the Participant")
@@ -243,7 +224,7 @@ else:
         )
 
         # ---------------------------------------------------------
-        # SECTION B: FORMS OF OCCUPATIONAL FRAUD
+        # SECTION B
         # ---------------------------------------------------------
         st.markdown("---")
         st.markdown("## Section B: Forms of Occupational Fraud")
@@ -330,7 +311,7 @@ else:
                 )
 
         # ---------------------------------------------------------
-        # SECTION C: OPERATION OF THE COSO COMPONENTS
+        # SECTION C
         # ---------------------------------------------------------
         st.markdown("---")
         st.markdown("## Section C: Operation of the COSO Internal Control Components")
@@ -492,7 +473,7 @@ else:
         )
 
         # ---------------------------------------------------------
-        # SECTION D: CHALLENGES IN PREVENTION, DETECTION AND RESPONSE
+        # SECTION D
         # ---------------------------------------------------------
         st.markdown("---")
         st.markdown("## Section D: Challenges in Prevention, Detection and Response")
@@ -518,7 +499,7 @@ else:
         )
 
         # ---------------------------------------------------------
-        # OPTIONAL CLOSING PROMPTS
+        # OPTIONAL PROMPTS
         # ---------------------------------------------------------
         st.markdown("---")
         st.markdown("## Optional Closing Prompts")
@@ -618,7 +599,6 @@ else:
                     else:
                         df_new.to_csv(DATA_FILE, mode='w', header=True, index=False)
                     st.success("Thank you. Your interview response has been successfully recorded and securely saved.")
-                    st.balloons()
                 except Exception as e:
                     st.error(
                         "Your response could not be saved automatically. "
@@ -627,46 +607,41 @@ else:
                     )
 
 # ============================================================
-# RESEARCHER ADMIN PORTAL (PASSWORD-PROTECTED)
+# ADMIN DOWNLOAD PORTAL (only visible after login)
 # ============================================================
-with st.expander("Researcher Admin Portal — Restricted Access"):
-    if check_password():
-        st.success("Authenticated as administrator.")
-        st.write("View and download collected field responses for framework analysis in NVivo or Excel.")
+st.markdown("---")
+st.markdown("## Admin Download")
+st.write("Download collected responses.")
 
-        if os.path.exists(DATA_FILE) and os.path.getsize(DATA_FILE) > 0:
-            try:
-                df_existing = pd.read_csv(DATA_FILE)
-                st.metric("Total Responses Collected", len(df_existing))
-                st.dataframe(df_existing)
+if os.path.exists(DATA_FILE) and os.path.getsize(DATA_FILE) > 0:
+    try:
+        df_existing = pd.read_csv(DATA_FILE)
+        st.metric("Total Responses Collected", len(df_existing))
+        st.dataframe(df_existing)
 
-                csv_data = df_existing.to_csv(index=False).encode('utf-8')
-                st.download_button(
-                    label="Download Responses as CSV (for NVivo / Excel)",
-                    data=csv_data,
-                    file_name=f"industrial_construction_fraud_responses_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                    mime="text/csv",
-                )
+        csv_data = df_existing.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="Download Responses as CSV (for NVivo / Excel)",
+            data=csv_data,
+            file_name=f"industrial_construction_fraud_responses_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+            mime="text/csv",
+        )
 
-                st.markdown("### Quick Summary of Key Fields")
-                if "Q1_Role" in df_existing.columns:
-                    st.write("**Respondent roles:**")
-                    st.write(df_existing["Q1_Role"].value_counts())
-                if "Q2_Size" in df_existing.columns:
-                    st.write("**Firm sizes:**")
-                    st.write(df_existing["Q2_Size"].value_counts())
-                if "Q6_Declined" in df_existing.columns:
-                    st.write("**Q6 incidence cases provided:**")
-                    declined_count = int(df_existing["Q6_Declined"].sum())
-                    provided_count = len(df_existing) - declined_count
-                    st.write(f"{provided_count} provided, {declined_count} declined")
-            except pd.errors.EmptyDataError:
-                st.info("Response file is empty. Submit a test response to initialize the dataset.")
-            except pd.errors.ParserError:
-                st.warning("Response file could not be parsed. It may be corrupted. Check the file on the server.")
-            except Exception as e:
-                st.warning(f"Could not read the response file: {type(e).__name__}")
-        else:
-            st.info("No responses recorded yet. Submit a test response above to initialize the dataset.")
-    else:
-        st.caption("This section is restricted to the principal researcher. Enter the admin password to view responses.")
+        st.markdown("### Quick Summary of Key Fields")
+        if "Q1_Role" in df_existing.columns:
+            st.write("**Respondent roles:**")
+            st.write(df_existing["Q1_Role"].value_counts())
+        if "Q2_Size" in df_existing.columns:
+            st.write("**Firm sizes:**")
+            st.write(df_existing["Q2_Size"].value_counts())
+        if "Q6_Declined" in df_existing.columns:
+            st.write("**Q6 incidence cases provided:**")
+            declined_count = int(df_existing["Q6_Declined"].sum())
+            provided_count = len(df_existing) - declined_count
+            st.write(f"{provided_count} provided, {declined_count} declined")
+    except pd.errors.EmptyDataError:
+        st.info("Response file is empty. Submit a test response to initialize the dataset.")
+    except Exception as e:
+        st.warning(f"Could not read the response file: {type(e).__name__}")
+else:
+    st.info("No responses recorded yet. Submit a test response above to initialize the dataset.")
