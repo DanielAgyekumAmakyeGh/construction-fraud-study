@@ -123,7 +123,7 @@ else:
             role = st.selectbox(
                 "Functional role",
                 [
-                    "President, Contractors Association of Ghana",
+                    "CEO, Ghana Chamber of Construction Industry",
                     "Project Manager",
                     "Site Supervisor",
                     "Civil/Structure Engineer",
